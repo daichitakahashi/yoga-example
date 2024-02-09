@@ -24,9 +24,19 @@ const Node = builder.interfaceRef('Node').implement({
 	}),
 });
 
+interface ContactShape {
+	email: string;
+}
+const Contact = builder.objectRef<ContactShape>('Contact').implement({
+	fields: (t) => ({
+		email: t.exposeString('email'),
+	}),
+});
+
 interface UserShape {
 	id: string;
 	name: string;
+	contact?: ContactShape;
 }
 const User = builder.objectRef<UserShape>('User').implement({
 	interfaces: [Node],
@@ -36,6 +46,15 @@ const User = builder.objectRef<UserShape>('User').implement({
 	}),
 	isTypeOf: (v) => (typeof v === 'object' && v && 'id' in v && typeof v.id === 'string' && v.id.startsWith('User:')) || false,
 });
+
+builder.objectField(User, 'contact', (t) =>
+	t.field({
+		type: Contact,
+		resolve: (parent, _, ctx, info) => {
+			return parent.contact || { email: 'default@example.com' };
+		},
+	})
+);
 
 builder.queryType({
 	fields: (t) => ({
@@ -67,7 +86,7 @@ builder.queryType({
 				return {
 					id: args.id,
 					name: ctx.DEFAULT_NAME, // 環境変数を参照できることを確認。
-					//contact: { email: 'peter@example.com' },
+					contact: { email: 'peter@example.com' },
 				};
 			},
 		}),
